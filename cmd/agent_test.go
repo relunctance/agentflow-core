@@ -1,4 +1,4 @@
-package cmd
+package main
 
 import (
 	"bytes"
@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/agentflow/agentflow-core/internal/bus"
 	"github.com/agentflow/agentflow-core/internal/storage"
@@ -219,7 +220,7 @@ func TestBusPublishSubscribe(t *testing.T) {
 		if evt.Topic != bus.TopicAgentRegistered {
 			t.Errorf("Expected topic %s, got %s", bus.TopicAgentRegistered, evt.Topic)
 		}
-	case <-ch:
+	case <-time.After(500 * time.Millisecond):
 		t.Error("Timed out waiting for event")
 	}
 }
@@ -228,7 +229,7 @@ func TestBusUnsubscribe(t *testing.T) {
 	b := bus.New()
 	defer b.Close()
 
-	ch, unsub := b.Subscribe(bus.TopicAgentHeartbeat)
+	_, unsub := b.Subscribe(bus.TopicAgentHeartbeat)
 	unsub() // unsubscribe immediately
 
 	// This should not block since there are no subscribers

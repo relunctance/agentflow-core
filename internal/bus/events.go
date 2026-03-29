@@ -11,6 +11,10 @@ const (
 	TopicAgentHeartbeat  = "agent.heartbeat"
 	TopicAgentOffline    = "agent.offline"
 	TopicAgentOnline     = "agent.online"
+	TopicTaskCreated     = "task.created"
+	TopicTaskUpdated     = "task.updated"
+	TopicTaskDeleted     = "task.deleted"
+	TopicEventLogged     = "event.logged"
 )
 
 // Event represents a domain event on the bus
@@ -36,4 +40,27 @@ type HeartbeatPayload struct {
 // AgentOfflinePayload is the payload for agent offline events
 type AgentOfflinePayload struct {
 	AgentID string `json:"agent_id"`
+}
+
+// TaskCreatedPayload is the payload for task creation events
+type TaskCreatedPayload struct {
+	TaskID  string `json:"task_id"`
+	AgentID string `json:"agent_id"`
+	Title   string `json:"title"`
+}
+
+// TaskUpdatedPayload is the payload for task update events
+type TaskUpdatedPayload struct {
+	TaskID string `json:"task_id"`
+	Status string `json:"status"`
+}
+
+// EventLoggedPayload is the payload for event log events
+type EventLoggedPayload struct {
+	EventID  string `json:"event_id"`
+	AgentID  string `json:"agent_id"`
+	TaskID   string `json:"task_id"`
+	Type     string `json:"type"`
+	Message  string `json:"message"`
+	Metadata string `json:"metadata"`
 }

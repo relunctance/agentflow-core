@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/agentflow/agentflow-core/cmd"
+	"github.com/agentflow/agentflow-core/internal/bus"
 	"github.com/agentflow/agentflow-core/internal/storage"
 )
 
@@ -26,7 +26,7 @@ func main() {
 	defer store.Close()
 
 	// Register routes and get event bus
-	mux, eventBus := cmd.RunServer(store)
+	mux, eventBus := runServer(store)
 	defer eventBus.Close()
 
 	port := os.Getenv("PORT")
@@ -39,4 +39,27 @@ func main() {
 	if err := http.ListenAndServe(":"+port, mux); err != nil {
 		log.Fatalf("Server error: %v", err)
 	}
+}
+
+// runServer starts the HTTP server with all routes registered
+func runServer(store *storage.SQLiteStore) (http.Handler, *bus.Bus) {
+	mux := http.NewServeMux()
+
+	// Initialize event bus
+	eventBus := bus.New()
+
+	// Register agent handlers
+	agentHandler := NewAgentHandler(store, eventBus)
+	agentHandler.RegisterRoutes(mux)
+
+	// Register task handlers
+	taskHandler := NewTaskHandler(store, eventBus)
+	taskHandler.RegisterRoutes(mux)
+
+	// Register event handlers
+	eventHandler := NewEventHandler(store, eventBus)
+	eventHandler.RegisterRoutes(mux)
+
+	log.Println("All routes registered")
+	return mux, eventBus
 }

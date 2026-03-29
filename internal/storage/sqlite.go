@@ -90,6 +90,21 @@ func (s *SQLiteStore) Close() error {
 	return s.db.Close()
 }
 
+// AgentRepository returns the Agent repository
+func (s *SQLiteStore) AgentRepository() models.AgentRepository {
+	return s.agents
+}
+
+// TaskRepository returns the Task repository
+func (s *SQLiteStore) TaskRepository() models.TaskRepository {
+	return s.tasks
+}
+
+// EventRepository returns the Event repository
+func (s *SQLiteStore) EventRepository() models.EventRepository {
+	return s.events
+}
+
 // AgentRepository implements models.AgentRepository using SQLite
 type AgentRepository struct {
 	db *sql.DB
