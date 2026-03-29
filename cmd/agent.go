@@ -39,6 +39,7 @@ func NewAgentHandler(store *storage.SQLiteStore, b *bus.Bus) *AgentHandler {
 func (h *AgentHandler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/agents", h.Register)
 	mux.HandleFunc("POST /api/agents/{id}/heartbeat", h.Heartbeat)
+	mux.HandleFunc("POST /api/agents/{id}/status", h.Status)
 	mux.HandleFunc("GET /api/agents", h.ListAgents)
 	mux.HandleFunc("GET /api/agents/{id}", h.GetAgent)
 }
@@ -149,6 +150,73 @@ func (h *AgentHandler) Heartbeat(w http.ResponseWriter, r *http.Request) {
 	if h.bus != nil {
 		h.bus.Publish(bus.TopicAgentHeartbeat, bus.HeartbeatPayload{
 			AgentID: agentID,
+		})
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+}
+
+// Status handles POST /api/agents/{id}/status
+// Request body: {"status": "started|running|finished|failed", "description": "optional message"}
+func (h *AgentHandler) Status(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	agentID := r.PathValue("id")
+	if agentID == "" {
+		http.Error(w, "Agent ID required", http.StatusBadRequest)
+		return
+	}
+
+	var body struct {
+		Status      string `json:"status"`
+		Description string `json:"description"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if body.Status == "" {
+		http.Error(w, "status is required", http.StatusBadRequest)
+		return
+	}
+
+	validStatuses := map[string]bool{"started": true, "running": true, "finished": true, "failed": true}
+	if !validStatuses[body.Status] {
+		http.Error(w, "invalid status value", http.StatusBadRequest)
+		return
+	}
+
+	ctx := r.Context()
+
+	agent, err := h.store.AgentRepository().GetByID(ctx, agentID)
+	if err != nil {
+		log.Printf("Failed to get agent: %v", err)
+		http.Error(w, "Failed to get agent", http.StatusInternalServerError)
+		return
+	}
+	if agent == nil {
+		http.Error(w, "Agent not found", http.StatusNotFound)
+		return
+	}
+
+	agent.Status = body.Status
+	if err := h.store.AgentRepository().Update(ctx, agent); err != nil {
+		log.Printf("Failed to update agent status: %v", err)
+		http.Error(w, "Failed to update agent", http.StatusInternalServerError)
+		return
+	}
+
+	// Publish status change event
+	if h.bus != nil {
+		h.bus.Publish(bus.TopicAgentStatus, bus.StatusPayload{
+			AgentID:    agentID,
+			Status:     body.Status,
+			Description: body.Description,
 		})
 	}
 

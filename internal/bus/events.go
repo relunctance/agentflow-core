@@ -11,6 +11,7 @@ const (
 	TopicAgentHeartbeat  = "agent.heartbeat"
 	TopicAgentOffline    = "agent.offline"
 	TopicAgentOnline     = "agent.online"
+	TopicAgentStatus     = "agent.status"
 	TopicTaskCreated     = "task.created"
 	TopicTaskUpdated     = "task.updated"
 	TopicTaskDeleted     = "task.deleted"
@@ -40,6 +41,13 @@ type HeartbeatPayload struct {
 // AgentOfflinePayload is the payload for agent offline events
 type AgentOfflinePayload struct {
 	AgentID string `json:"agent_id"`
+}
+
+// StatusPayload is the payload for agent status change events
+type StatusPayload struct {
+	AgentID     string `json:"agent_id"`
+	Status      string `json:"status"`
+	Description string `json:"description"`
 }
 
 // TaskCreatedPayload is the payload for task creation events
