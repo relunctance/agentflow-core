@@ -76,7 +76,8 @@ function get_tasks(PDO $db, ?string $agentId = null): array {
 }
 
 function get_recent_events(PDO $db, int $limit = 30): array {
-    $stmt = $db->query("SELECT * FROM events ORDER BY created_at DESC LIMIT {$limit}");
+    $stmt = $db->prepare("SELECT * FROM events ORDER BY created_at DESC LIMIT ?");
+    $stmt->execute([$limit]);
     return $stmt->fetchAll();
 }
 
